@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <!-- Load icon libraby (for search bar)-->
+    >
+    <link rel="stylesheet" href="/public/css/mainpage1.css" />
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="" />
+
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <title>mainpage</title>
+</head>
+
+<body>
+    <h1 style="color: black" style="margin: auto; max-width: 400px">
+        Welcome !
+    </h1>
+
+    <div class="Search_mainpage" style="margin: auto; max-width: 300px">
+        <!-- <form action="/mainpagetypes" method="post"> -->
+        <input type="text" placeholder="Search.." name="search" id="search" />
+        <button id="searchBtn">
+        <i class="fa fa-search"></i>
+      </button>
+        <!-- </form> -->
+    </div>
+
+    <div style="height: 400px; width: 40%" id="mapid"></div>
+
+    <div class="scrollmenu">
+        <a href="/mainpage/dilosi">Δήλωση κρούσματος </a>
+        <a href="#Epafi"> Πιθανή επαφή</a>
+        <a href="#Kat_episkepsis">Καταχωρηση επίσκεψης</a>
+        <a href="/mainpage/profile_change"> Επεξεργασία προφίλ</a>
+    </div>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+
+    <script>
+        // pos na kentraro ton xristi otan sunde8ei : https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjGuI-Z7tv0AhV3iv0HHcn0B4kQFnoECAcQAQ&url=https%3A%2F%2Fdeveloper.mozilla.org%2Fel%2Fdocs%2FWeb%2FAPI%2FGeolocation%2FgetCurrentPosition&usg=AOvVaw2321yRy6Qaug2Mh_37kZtf
+
+        // synarthsh gia markers
+        $(document).ready(function() {
+            // to documenation gia tous xartes einai edw:  https://leafletjs.com/examples/quick-start/
+            var layer = L.tileLayer(
+                "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+                    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                    maxZoom: 18,
+                    id: "mapbox/streets-v11",
+                    tileSize: 512,
+                    zoomOffset: -1,
+                    accessToken: "pk.eyJ1IjoibGZrc2pmZGtsc2pmbGtzZGpmbGtzZGZqbGsiLCJhIjoiY2twZHZ2emJyMXJpOTJubnhoNXE3dGF5MiJ9.tFk1NMKkfjT7F-0OJ4Z-Sw",
+                    // get access from here :https://api.mapbox.com
+                }
+            );
+            const map = L.map("mapid", {
+                selectedArea: true,
+                center: [38.245865, 21.73286],
+                zoom: 13,
+                layers: [layer],
+            });
+
+            var userMarket = L.marker([37.968202, 21.73286]);
+            userMarket.addTo(map);
+            getLocation(map);
+
+            function getLocation(map) {
+                function success(details) {
+                    //lat
+                    console.log("Test");
+                    var lat = details.coords.latitude;
+                    var lon = details.coords.longitude;
+                    console.log(details.coords.latitude, details.coords.longitude);
+                    L.marker([lat, lon], {
+                        radius: 5000
+                    }).addTo(map);
+                    //L.marker([lat, lon]).addTo(map);
+                    map.flyTo([lat, lon]);
+                }
+
+                function error(error) {
+                    console.log(error);
+                }
+                var options = {
+                    timeout: 100000,
+                    maximumAge: 0,
+                };
+                navigator.geolocation.getCurrentPosition(success, error, options);
+            }
+
+            //  standard on load code goes here with $ prefix
+            // note: the $ is setup inside the anonymous function of the ready command
+            $("#searchBtn").click(function() {
+                const search = $("#search").val();
+
+                $.ajax({
+                    url: "/mainpagetypes",
+                    type: "post",
+                    data: {
+                        search: search
+                    },
+                    success: function(response) {
+                        console.log(response);
+                        response.map((resp) => {
+                            var userMarket = L.marker([
+                                resp.coordinates.lat,
+                                resp.coordinates.lng,
+                            ]);
+                            userMarket.addTo(map).on('click', markerOnClick) // an pathseis panw tou 
+
+                            function markerOnClick(e) {
+                                //  alert("hi. you clicked the marker at " + e.latlng); //emganizei to lat, lng 
+                                userMarket.bindPopup('<b>Όνομα Καταστήματος:</br> Επισκεψιμότητα: </br>  Μέσος Όρος Επισκέψεων: </br> <a href="/SumbitKrousma">Kαταχώρηση κρούσματος</a> </p>')
+                                userMarket.openPopup();
+                            }
+
+                        });
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                    },
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
