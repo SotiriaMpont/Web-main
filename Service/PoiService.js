@@ -1,6 +1,8 @@
 const PoiRepository = require("../Infastracture/PoiRepository");
 
-class PoiService {#
+class PoiService {
+
+    #
     repo = new PoiRepository();
 
     async GetCoords(search) {
